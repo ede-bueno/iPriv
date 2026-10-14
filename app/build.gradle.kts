@@ -18,8 +18,8 @@ android {
     applicationId = "com.aistudio.privmemoria.kxmpzq"
     minSdk = 24
     targetSdk = 36
-    versionCode = 5
-    versionName = "1.0.0-beta.4"
+    versionCode = 6
+    versionName = "1.0.0-beta.5"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

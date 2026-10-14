@@ -65,25 +65,12 @@ class MainActivity : ComponentActivity() {
                 darkTheme = isDarkTheme,
                 dynamicColor = userPrefs.useDynamicColors
             ) {
-                val prefs = getSharedPreferences("priv_prefs", MODE_PRIVATE)
-                var hasCompletedOnboarding by remember {
-                    mutableStateOf(prefs.getBoolean("has_completed_onboarding", true))
+                LaunchedEffect(Unit) {
+                    val prefs = getSharedPreferences("priv_prefs", MODE_PRIVATE)
+                    prefs.edit().putBoolean("has_completed_onboarding", true).apply()
                 }
 
-                if (!hasCompletedOnboarding) {
-                    com.example.priv.ui.screens.OnboardingScreen(
-                        onCompleteOnboarding = { name, isGoogle ->
-                            if (name.isNotBlank()) {
-                                prefs.edit().putString("user_name", name).apply()
-                                profileViewModel.updateProfileNameAndPhoto(name, null)
-                            }
-                            prefs.edit().putBoolean("has_completed_onboarding", true).apply()
-                            hasCompletedOnboarding = true
-                        }
-                    )
-                } else {
-                    PrivAppContent()
-                }
+                PrivAppContent()
             }
         }
     }
