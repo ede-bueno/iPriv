@@ -50,7 +50,7 @@ class PersonViewModel(application: Application) : AndroidViewModel(application) 
         _selectedPersonId.value = personId
     }
 
-    fun addPerson(name: String, nickname: String, relationship: String, colorHex: String, bioNote: String) {
+    fun addPerson(name: String, nickname: String, relationship: String, colorHex: String, bioNote: String, avatarUri: String = "") {
         viewModelScope.launch {
             if (name.isNotBlank()) {
                 personRepo.insertPerson(
@@ -58,6 +58,7 @@ class PersonViewModel(application: Application) : AndroidViewModel(application) 
                         name = name.trim(),
                         nickname = nickname.trim(),
                         relationship = relationship.trim().ifBlank { "Amigo(a)" },
+                        avatarUri = avatarUri.trim(),
                         colorHex = colorHex,
                         bioNote = bioNote.trim()
                     )

@@ -36,18 +36,28 @@ class SupabaseClientManager(private val context: Context) {
         .writeTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    val supabaseUrl: String = BuildConfig.SUPABASE_URL.ifEmpty { "https://priv-memories-app.supabase.co" }
-
-    val supabaseAnonKey: String = BuildConfig.SUPABASE_ANON_KEY.ifEmpty {
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXYtYXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.public_anon_key_priv"
+    val supabaseUrl: String = BuildConfig.SUPABASE_URL.let {
+        if (it.isNotBlank() && (it.startsWith("http://") || it.startsWith("https://"))) it
+        else "https://priv-memories-app.supabase.co"
     }
+
+    val supabaseAnonKey: String = BuildConfig.SUPABASE_ANON_KEY.let {
+        if (it.isNotBlank() && it != "DEFAULT_SECRET_VALUE") it
+        else "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXYtYXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.public_anon_key_priv"
+    }
+
+    private val prefs = context.getSharedPreferences("priv_prefs", Context.MODE_PRIVATE)
 
     private val _currentSession = MutableStateFlow<UserSession?>(
         UserSession(
-            userId = "local_user_a",
-            email = "conta_a@priv.app",
-            personalSpaceId = "space_a_priv",
-            isAuthenticated = true
+            userId = "usr_priv_01",
+            email = "usuario@priv.app",
+            displayName = prefs.getString("user_name", null) ?: "Usuário do Priv",
+            photoUrl = prefs.getString("user_photo_url", null),
+            personalSpaceId = "space_personal_usr_priv_01",
+            isAuthenticated = true,
+            authProvider = "Google",
+            createdAtTimestamp = System.currentTimeMillis() - 86400000L * 30
         )
     )
     val currentSession: StateFlow<UserSession?> = _currentSession.asStateFlow()
@@ -60,12 +70,13 @@ class SupabaseClientManager(private val context: Context) {
     private val remoteStorageStore = ConcurrentHashMap<String, ByteArray>()
     private val userSpaceMap = ConcurrentHashMap<String, String>() // userId -> spaceId
 
-    suspend fun createAccount(email: String, pass: String): UserSession = withContext(Dispatchers.IO) {
+    suspend fun createAccount(email: String, pass: String, name: String = ""): UserSession = withContext(Dispatchers.IO) {
         val url = "$supabaseUrl/auth/v1/signup"
+        val displayName = name.ifBlank { email.substringBefore("@") }
         val bodyJson = JSONObject().apply {
             put("email", email)
             put("password", pass)
-            put("data", JSONObject().put("full_name", email.substringBefore("@")))
+            put("data", JSONObject().put("full_name", displayName))
         }
 
         val request = Request.Builder()
@@ -102,8 +113,11 @@ class SupabaseClientManager(private val context: Context) {
         val session = UserSession(
             userId = userId,
             email = email,
+            displayName = displayName,
+            photoUrl = null,
             personalSpaceId = personalSpaceId,
-            isAuthenticated = true
+            isAuthenticated = true,
+            authProvider = "E-mail"
         )
         _currentSession.value = session
         session
@@ -150,11 +164,82 @@ class SupabaseClientManager(private val context: Context) {
         val session = UserSession(
             userId = userId,
             email = email,
+            displayName = email.substringBefore("@"),
+            photoUrl = null,
             personalSpaceId = personalSpaceId,
-            isAuthenticated = true
+            isAuthenticated = true,
+            authProvider = "E-mail"
         )
         _currentSession.value = session
         session
+    }
+
+    suspend fun authenticateWithGoogleToken(idToken: String, email: String, name: String?, photoUrl: String?): UserSession = withContext(Dispatchers.IO) {
+        val url = "$supabaseUrl/auth/v1/token?grant_type=id_token"
+        val bodyJson = JSONObject().apply {
+            put("provider", "google")
+            put("id_token", idToken)
+        }
+
+        var userId = "google_user_" + UUID.nameUUIDFromBytes(email.toByteArray()).toString().replace("-", "").take(12)
+        var accessToken: String? = null
+
+        try {
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("apikey", supabaseAnonKey)
+                .addHeader("Content-Type", "application/json")
+                .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val respStr = response.body?.string().orEmpty()
+                if (response.isSuccessful) {
+                    val jsonObj = JSONObject(respStr)
+                    val userObj = jsonObj.optJSONObject("user")
+                    if (userObj != null && userObj.has("id")) {
+                        userId = userObj.getString("id")
+                    }
+                    if (jsonObj.has("access_token")) {
+                        accessToken = jsonObj.getString("access_token")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.d("SupabaseClientManager", "Google auth fallback to direct local session: ${e.message}")
+        }
+
+        val personalSpaceId = "space_personal_$userId"
+        activeAccessToken = accessToken ?: "token_google_$userId"
+        userSpaceMap[userId] = personalSpaceId
+        userSpaceMap[activeAccessToken!!] = personalSpaceId
+
+        val session = UserSession(
+            userId = userId,
+            email = email,
+            displayName = name ?: email.substringBefore("@"),
+            photoUrl = photoUrl,
+            personalSpaceId = personalSpaceId,
+            isAuthenticated = true,
+            authProvider = "Google"
+        )
+        _currentSession.value = session
+        session
+    }
+
+    suspend fun updateProfile(displayName: String, photoUrl: String?): UserSession {
+        val curr = _currentSession.value ?: throw IllegalStateException("Nenhum usuário conectado")
+        prefs.edit().apply {
+            putString("user_name", displayName)
+            if (photoUrl != null) putString("user_photo_url", photoUrl) else remove("user_photo_url")
+            apply()
+        }
+        val updated = curr.copy(
+            displayName = displayName,
+            photoUrl = photoUrl
+        )
+        _currentSession.value = updated
+        return updated
     }
 
     suspend fun switchAccount(email: String): UserSession {
@@ -248,6 +333,7 @@ class SupabaseClientManager(private val context: Context) {
                                 primaryPersonId = if (obj.has("primary_person_id") && !obj.isNull("primary_person_id")) obj.getString("primary_person_id") else null,
                                 momentId = if (obj.has("moment_id") && !obj.isNull("moment_id")) obj.getString("moment_id") else null,
                                 collectionId = if (obj.has("collection_id") && !obj.isNull("collection_id")) obj.getString("collection_id") else null,
+                                tags = obj.optString("tags", ""),
                                 syncStatus = SyncStatus.SYNCED
                             )
                         )

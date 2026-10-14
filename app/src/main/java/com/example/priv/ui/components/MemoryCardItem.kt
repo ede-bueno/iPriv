@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.example.priv.data.model.MemoryWithDetails
 import com.example.priv.ui.audio.AudioPlayerManager
 
@@ -31,6 +32,7 @@ fun MemoryCardItem(
     onToggleFavorite: () -> Unit,
     onMoveToTrash: () -> Unit,
     onPersonClick: (String) -> Unit = {},
+    onCardClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val memory = memoryWithDetails.memory
@@ -49,11 +51,72 @@ fun MemoryCardItem(
     } else 0f
 
     var showTranscription by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<String?>(null) }
+    var selectedVideoUri by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Mover para a Lixeira?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "A memória \"${memory.title.ifBlank { "Sem título" }}\" será movida para a Lixeira. Você poderá restaurá-la a qualquer momento.",
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        onMoveToTrash()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Mover para Lixeira")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (selectedImageUri != null) {
+        ImageViewerDialog(
+            imageUriOrPath = selectedImageUri!!,
+            title = memory.title,
+            note = memory.note,
+            onDismiss = { selectedImageUri = null }
+        )
+    }
+
+    if (selectedVideoUri != null) {
+        VideoViewerDialog(
+            videoUriOrPath = selectedVideoUri!!,
+            title = memory.title,
+            onDismiss = { selectedVideoUri = null }
+        )
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
+            .then(if (onCardClick != null) Modifier.clickable { onCardClick() } else Modifier)
             .testTag("memory_card_${memory.id}"),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
@@ -151,7 +214,7 @@ fun MemoryCardItem(
                     }
 
                     IconButton(
-                        onClick = onMoveToTrash,
+                        onClick = { showDeleteConfirmDialog = true },
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
@@ -185,10 +248,72 @@ fun MemoryCardItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Image Attachments Grid / Row
+            val imageAttachments = memoryWithDetails.attachments.filter { it.type == "IMAGE" }
+            if (imageAttachments.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    imageAttachments.take(3).forEach { img ->
+                        val imagePath = if (img.localPath.isNotBlank()) img.localPath else img.uri
+                        coil.compose.AsyncImage(
+                            model = imagePath,
+                            contentDescription = "Foto da memória",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(120.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { selectedImageUri = imagePath }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Video Attachments Preview
+            val videoAttachments = memoryWithDetails.attachments.filter { it.type == "VIDEO" }
+            if (videoAttachments.isNotEmpty()) {
+                videoAttachments.forEach { vid ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .padding(vertical = 4.dp)
+                            .clickable { selectedVideoUri = if (vid.localPath.isNotBlank()) vid.localPath else vid.uri }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.PlayCircleFilled,
+                                    contentDescription = "Vídeo",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Vídeo em anexo",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // Audio Player Component
             if (audioAttachment != null) {
+                var localTranscription by remember(audioAttachment.id) { mutableStateOf(audioAttachment.transcription) }
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -205,7 +330,8 @@ fun MemoryCardItem(
                                     AudioPlayerManager.playOrPause(
                                         memoryId = memory.id,
                                         attachmentId = audioAttachment.id,
-                                        totalDurationMs = audioAttachment.durationMs
+                                        totalDurationMs = audioAttachment.durationMs,
+                                        waveformData = audioAttachment.waveformData
                                     )
                                 },
                                 modifier = Modifier.size(44.dp),
@@ -283,7 +409,11 @@ fun MemoryCardItem(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            if (audioAttachment.transcription.isNotBlank()) {
+                            var isTranscribing by remember { mutableStateOf(false) }
+                            val scope = rememberCoroutineScope()
+                            val context = androidx.compose.ui.platform.LocalContext.current
+
+                            if (localTranscription.isNotBlank()) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.clickable { showTranscription = !showTranscription }
@@ -302,10 +432,54 @@ fun MemoryCardItem(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
+                            } else {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable(enabled = !isTranscribing) {
+                                        if (!isTranscribing) {
+                                            isTranscribing = true
+                                            scope.launch {
+                                                val mgr = com.example.priv.data.ai.PrivGeminiIntelligenceManager(context)
+                                                val text = mgr.transcribeAudio(
+                                                    noteText = memory.note,
+                                                    personName = primaryPerson?.name,
+                                                    durationMs = audioAttachment.durationMs
+                                                )
+                                                localTranscription = text
+                                                showTranscription = true
+                                                isTranscribing = false
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    if (isTranscribing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(12.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Transcrevendo...", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = "Transcrever IA",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "✨ Transcrever",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
                         }
 
-                        AnimatedVisibility(visible = showTranscription && audioAttachment.transcription.isNotBlank()) {
+                        AnimatedVisibility(visible = showTranscription && localTranscription.isNotBlank()) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = MaterialTheme.colorScheme.surface,
@@ -314,7 +488,7 @@ fun MemoryCardItem(
                                     .padding(top = 8.dp)
                             ) {
                                 Text(
-                                    text = "\"${audioAttachment.transcription}\"",
+                                    text = "\"$localTranscription\"",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.padding(8.dp)

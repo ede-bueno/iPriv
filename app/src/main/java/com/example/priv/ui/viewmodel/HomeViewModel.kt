@@ -19,6 +19,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val personRepo = PersonRepository(db.personDao())
     private val momentRepo = MomentRepository(db.momentDao())
     private val collectionRepo = CollectionRepository(db.collectionDao())
+    private val groupRepo = GroupRepository(db.groupDao())
 
     val activeMemories: StateFlow<List<MemoryWithDetails>> = memoryRepo.activeMemories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -30,6 +31,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val persons: StateFlow<List<PersonEntity>> = personRepo.allPersons
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val groups: StateFlow<List<com.example.priv.data.entity.GroupEntity>> = groupRepo.allGroups
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val moments: StateFlow<List<MomentEntity>> = momentRepo.allMoments
@@ -67,6 +71,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun moveToTrash(memoryId: String) {
         viewModelScope.launch {
             memoryRepo.moveToTrash(memoryId)
+        }
+    }
+
+    fun updateMemoryFull(
+        memoryId: String,
+        newTitle: String,
+        newNote: String,
+        tags: List<String> = emptyList(),
+        newAttachments: List<com.example.priv.data.model.AttachmentInput> = emptyList(),
+        deletedAttachmentIds: List<String> = emptyList(),
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            memoryRepo.updateMemoryFull(
+                memoryId = memoryId,
+                newTitle = newTitle,
+                newNote = newNote,
+                tags = tags,
+                newAttachments = newAttachments,
+                deletedAttachmentIds = deletedAttachmentIds
+            )
+            onSuccess()
         }
     }
 }

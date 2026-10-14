@@ -28,20 +28,28 @@ import kotlinx.coroutines.launch
         MemoryMomentCrossRef::class,
         MemoryCollectionCrossRef::class,
         MemoryTagCrossRef::class,
-        GroupPersonCrossRef::class
+        MemoryGroupCrossRef::class,
+        GroupPersonCrossRef::class,
+        TimeCapsuleEntity::class,
+        ScrapbookEntity::class,
+        AudioMemoryEntity::class
     ],
-    version = 2,
+    version = 7,
     exportSchema = false
 )
 abstract class PrivDatabase : RoomDatabase() {
 
     abstract fun memoryDao(): MemoryDao
     abstract fun personDao(): PersonDao
+    abstract fun groupDao(): GroupDao
     abstract fun momentDao(): MomentDao
     abstract fun collectionDao(): CollectionDao
     abstract fun tagDao(): TagDao
     abstract fun spaceDao(): SpaceDao
     abstract fun syncQueueDao(): SyncQueueDao
+    abstract fun timeCapsuleDao(): TimeCapsuleDao
+    abstract fun scrapbookDao(): ScrapbookDao
+    abstract fun audioMemoryDao(): AudioMemoryDao
 
     companion object {
         @Volatile
@@ -57,17 +65,18 @@ abstract class PrivDatabase : RoomDatabase() {
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        // Populate seed data on first creation
                         CoroutineScope(Dispatchers.IO).launch {
                             getInstance(context).let { privDb ->
-                                SeedData.populateSeedData(
-                                    privDb.memoryDao(),
-                                    privDb.personDao(),
-                                    privDb.momentDao(),
-                                    privDb.collectionDao(),
-                                    privDb.tagDao(),
-                                    privDb.spaceDao()
-                                )
+                                SeedData.checkAndSeedIfEmpty(privDb)
+                            }
+                        }
+                    }
+
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        super.onOpen(db)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            getInstance(context).let { privDb ->
+                                SeedData.checkAndSeedIfEmpty(privDb)
                             }
                         }
                     }

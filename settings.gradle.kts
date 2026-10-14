@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Priv"
+rootProject.name = "GuardDay"
 
 include(":app")

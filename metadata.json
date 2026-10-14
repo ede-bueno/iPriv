@@ -1,5 +1,5 @@
 {
-  "name": "Priv",
+  "name": "GuardDay",
   "description": "Plataforma de memórias pessoais para guardar áudios, momentos e histórias antes que sumam.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -10,6 +10,9 @@ interface PersonDao {
     @Query("SELECT * FROM persons WHERE deletedAt IS NULL ORDER BY name ASC")
     fun getAllPersons(): Flow<List<PersonEntity>>
 
+    @Query("SELECT * FROM persons WHERE deletedAt IS NULL ORDER BY name ASC")
+    suspend fun getAllPersonsList(): List<PersonEntity>
+
     @Query("SELECT * FROM persons WHERE id = :id AND deletedAt IS NULL LIMIT 1")
     fun getPersonById(id: String): Flow<PersonEntity?>
 

@@ -62,5 +62,16 @@ data class MemoryWithDetails(
             entityColumn = "tagId"
         )
     )
-    val tags: List<TagEntity> = emptyList()
+    val tags: List<TagEntity> = emptyList(),
+
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id",
+        associateBy = Junction(
+            value = MemoryGroupCrossRef::class,
+            parentColumn = "memoryId",
+            entityColumn = "groupId"
+        )
+    )
+    val groups: List<GroupEntity> = emptyList()
 )

@@ -44,6 +44,16 @@ data class MemoryTagCrossRef(
 )
 
 @Entity(
+    tableName = "memory_group_cross_ref",
+    primaryKeys = ["memoryId", "groupId"],
+    indices = [Index(value = ["groupId"])]
+)
+data class MemoryGroupCrossRef(
+    val memoryId: String,
+    val groupId: String
+)
+
+@Entity(
     tableName = "group_person_cross_ref",
     primaryKeys = ["groupId", "personId"],
     indices = [Index(value = ["personId"])]

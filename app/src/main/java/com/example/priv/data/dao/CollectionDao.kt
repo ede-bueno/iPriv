@@ -10,6 +10,9 @@ interface CollectionDao {
     @Query("SELECT * FROM collections WHERE deletedAt IS NULL ORDER BY title ASC")
     fun getAllCollections(): Flow<List<CollectionEntity>>
 
+    @Query("SELECT * FROM collections WHERE deletedAt IS NULL ORDER BY title ASC")
+    suspend fun getAllCollectionsList(): List<CollectionEntity>
+
     @Query("SELECT * FROM collections WHERE id = :id AND deletedAt IS NULL LIMIT 1")
     fun getCollectionById(id: String): Flow<CollectionEntity?>
 

@@ -29,6 +29,7 @@ data class MemoryEntity(
     val primaryPersonId: String? = null,
     val momentId: String? = null,
     val collectionId: String? = null,
+    val tags: String = "", // Suporte a tags textuais diretas (ex: 'família', 'viagem', 'trabalho')
     
     // Ownership & Authoring
     val ownerUserId: String = "local_user",

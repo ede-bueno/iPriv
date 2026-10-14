@@ -1,0 +1,6 @@
+{
+  "summary": "Plano de melhorias de UX e UI para o GuardDay:\n- Cabeçalho global unificado com Avatar interativo fixo no topo direito em todas as telas para acesso imediato ao Menu e Perfil do Usuário.\n- Redesign visual minimalista moderno com tons obsidian escuro e lavanda suave.\n- Barra de navegação com 4 abas limpas (Início, Pessoas, Memórias com busca avançada Room/tags, e Linha do Tempo).\n- Preservação total de todas as funcionalidades existentes (gravação de áudio, busca Room por título/transcrição/tags, waveform, sincronização e gestão de contatos).",
+  "updatedAt": "2026-10-13T17:23:07.108379334Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

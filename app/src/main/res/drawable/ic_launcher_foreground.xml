@@ -1,13 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Outer Geometric GuardDay Shield (Preservation & Protection of Memories) -->
     <path
-        android:fillColor="#FF7597"
-        android:pathData="M38,36h6v36h-6z M48,28h6v52h-6z M58,20h6v68h-6z M68,32h6v44h-6z M78,40h6v28h-6z" />
+        android:pathData="M54,23 L78,33 C78,57 66,74 54,85 C42,74 30,57 30,33 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="30"
+                android:startY="23"
+                android:endX="78"
+                android:endY="85"
+                android:type="linear">
+                <item android:color="#7C4DFF" android:offset="0.0" />
+                <item android:color="#00D2D3" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner Dark Core Vault Shield cutout -->
     <path
-        android:fillColor="#FFB86C"
-        android:pathData="M54,24a30,30 0,0,0 -30,30a30,30 0,0,0 60,0a30,30 0,0,0 -30,-30zM54,80a26,26 0,1,1 26,-26a26,26 0,0,1 -26,26z" />
+        android:fillColor="#0D0A1A"
+        android:pathData="M54,28 L73,36 C73,55 63,69 54,78 C45,69 35,55 35,36 Z" />
+
+    <!-- Central Glowing Time/Memory Orb & Neural Ring -->
+    <path
+        android:pathData="M54,39 A12,12 0 1 0 54,63 A12,12 0 1 0 54,39 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="42"
+                android:startY="39"
+                android:endX="66"
+                android:endY="63"
+                android:type="linear">
+                <item android:color="#FF7597" android:offset="0.0" />
+                <item android:color="#9D4EDD" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Radiance / Iris Core of the Memory -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,47 A4,4 0 1 0 54,55 A4,4 0 1 0 54,47 Z" />
+
+    <!-- Sparkle Accent (Digital Spark / Preservation of Day) -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M73,22 L74.5,25.5 L78,27 L74.5,28.5 L73,32 L71.5,28.5 L68,27 L71.5,25.5 Z" />
 </vector>

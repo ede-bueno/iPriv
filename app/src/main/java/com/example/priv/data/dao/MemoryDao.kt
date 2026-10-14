@@ -12,6 +12,12 @@ interface MemoryDao {
     @Query("SELECT * FROM memories WHERE inTrash = 0 AND deletedAt IS NULL ORDER BY timestamp DESC")
     fun getAllActiveMemories(): Flow<List<MemoryWithDetails>>
 
+    @Query("SELECT * FROM memories WHERE deletedAt IS NULL")
+    suspend fun getAllMemoriesList(): List<MemoryEntity>
+
+    @Query("SELECT * FROM memory_attachments")
+    suspend fun getAllAttachmentsList(): List<MemoryAttachmentEntity>
+
     @Transaction
     @Query("SELECT * FROM memories WHERE id = :id AND deletedAt IS NULL LIMIT 1")
     fun getMemoryById(id: String): Flow<MemoryWithDetails?>
@@ -33,6 +39,10 @@ interface MemoryDao {
     fun getMemoriesForCollection(collectionId: String): Flow<List<MemoryWithDetails>>
 
     @Transaction
+    @Query("SELECT * FROM memories WHERE inTrash = 0 AND deletedAt IS NULL AND id IN (SELECT memoryId FROM memory_group_cross_ref WHERE groupId = :groupId) ORDER BY timestamp DESC")
+    fun getMemoriesForGroup(groupId: String): Flow<List<MemoryWithDetails>>
+
+    @Transaction
     @Query("SELECT * FROM memories WHERE inTrash = 0 AND deletedAt IS NULL AND isFavorite = 1 ORDER BY timestamp DESC")
     fun getFavoriteMemories(): Flow<List<MemoryWithDetails>>
 
@@ -43,6 +53,17 @@ interface MemoryDao {
     @Transaction
     @Query("SELECT * FROM memories WHERE inTrash = 1 AND deletedAt IS NULL ORDER BY trashedAt DESC")
     fun getTrashedMemories(): Flow<List<MemoryWithDetails>>
+
+    @Transaction
+    @Query("SELECT * FROM memories WHERE inTrash = 0 AND deletedAt IS NULL AND (title LIKE '%' || :query || '%' OR note LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%') ORDER BY timestamp DESC")
+    fun searchMemories(query: String): Flow<List<MemoryWithDetails>>
+
+    @Transaction
+    @Query("SELECT * FROM memories WHERE inTrash = 0 AND deletedAt IS NULL AND tags LIKE '%' || :tag || '%' ORDER BY timestamp DESC")
+    fun getMemoriesByTag(tag: String): Flow<List<MemoryWithDetails>>
+
+    @Query("UPDATE memories SET tags = :tags, updatedAt = :updatedAt WHERE id = :memoryId")
+    suspend fun updateMemoryTags(memoryId: String, tags: String, updatedAt: Long = System.currentTimeMillis())
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMemory(memory: MemoryEntity)
@@ -86,8 +107,20 @@ interface MemoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTagCrossRef(crossRef: MemoryTagCrossRef)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGroupCrossRef(crossRef: MemoryGroupCrossRef)
+
     @Query("DELETE FROM memory_person_cross_ref WHERE memoryId = :memoryId")
     suspend fun clearPersonCrossRefs(memoryId: String)
+
+    @Query("DELETE FROM memory_group_cross_ref WHERE memoryId = :memoryId")
+    suspend fun clearGroupCrossRefs(memoryId: String)
+
+    @Query("DELETE FROM memory_moment_cross_ref WHERE memoryId = :memoryId")
+    suspend fun clearMomentCrossRefs(memoryId: String)
+
+    @Query("DELETE FROM memory_collection_cross_ref WHERE memoryId = :memoryId")
+    suspend fun clearCollectionCrossRefs(memoryId: String)
 
     @Query("DELETE FROM memory_tag_cross_ref WHERE memoryId = :memoryId")
     suspend fun clearTagCrossRefs(memoryId: String)

@@ -10,6 +10,9 @@ interface MomentDao {
     @Query("SELECT * FROM moments WHERE deletedAt IS NULL ORDER BY createdAt DESC")
     fun getAllMoments(): Flow<List<MomentEntity>>
 
+    @Query("SELECT * FROM moments WHERE deletedAt IS NULL ORDER BY createdAt DESC")
+    suspend fun getAllMomentsList(): List<MomentEntity>
+
     @Query("SELECT * FROM moments WHERE id = :id AND deletedAt IS NULL LIMIT 1")
     fun getMomentById(id: String): Flow<MomentEntity?>
 

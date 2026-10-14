@@ -1,5 +1,7 @@
 package com.example.priv.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,22 +10,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.priv.data.entity.PersonEntity
 import com.example.priv.ui.components.MemoryCardItem
 import com.example.priv.ui.viewmodel.PersonViewModel
+
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -38,6 +42,7 @@ fun PersonsScreen(
     val selectedMemories by viewModel.selectedPersonMemories.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var showImportContactsDialog by remember { mutableStateOf(false) }
 
     if (selectedPersonId != null && selectedPerson != null) {
         // Person Detail View
@@ -61,7 +66,7 @@ fun PersonsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
                         text = "Pessoas",
                         fontSize = 24.sp,
@@ -75,18 +80,39 @@ fun PersonsScreen(
                     )
                 }
 
-                FilledTonalButton(
-                    onClick = { showAddDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.testTag("add_person_btn")
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PersonAdd,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Nova Pessoa", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    OutlinedButton(
+                        onClick = { showImportContactsDialog = true },
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.testTag("import_contacts_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Phone,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Contatos", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = { showAddDialog = true },
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.testTag("add_person_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Nova", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -109,9 +135,29 @@ fun PersonsScreen(
     if (showAddDialog) {
         AddPersonDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { name, nickname, rel, colorHex, bio ->
-                viewModel.addPerson(name, nickname, rel, colorHex, bio)
+            onAdd = { name, nickname, rel, colorHex, bio, avatarUri ->
+                viewModel.addPerson(name, nickname, rel, colorHex, bio, avatarUri)
                 showAddDialog = false
+            }
+        )
+    }
+
+    if (showImportContactsDialog) {
+        com.example.priv.ui.components.ImportContactsDialog(
+            onDismiss = { showImportContactsDialog = false },
+            onImportSelected = { contacts ->
+                val colors = listOf("#FF4B72", "#8E3BEE", "#00F5D4", "#FFB703", "#3A86FF", "#6C5CE7")
+                contacts.forEachIndexed { idx, c ->
+                    viewModel.addPerson(
+                        name = c.name,
+                        nickname = "",
+                        relationship = "Contato importado",
+                        colorHex = colors[idx % colors.size],
+                        bioNote = if (c.phoneNumber != null) "Telefone: ${c.phoneNumber}" else "Importado da agenda",
+                        avatarUri = c.photoUri ?: ""
+                    )
+                }
+                showImportContactsDialog = false
             }
         )
     }
@@ -138,7 +184,10 @@ fun PersonListItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -159,20 +208,24 @@ fun PersonListItem(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = person.name,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (person.nickname.isNotBlank()) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "(${person.nickname})",
                                 fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -182,7 +235,9 @@ fun PersonListItem(
                             text = person.relationship,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -191,7 +246,8 @@ fun PersonListItem(
                             text = person.bioNote,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -337,40 +393,94 @@ fun PersonDetailView(
 @Composable
 fun AddPersonDialog(
     onDismiss: () -> Unit,
-    onAdd: (name: String, nickname: String, rel: String, colorHex: String, bio: String) -> Unit
+    onAdd: (name: String, nickname: String, rel: String, colorHex: String, bio: String, avatarUri: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var nickname by remember { mutableStateOf("") }
     var rel by remember { mutableStateOf("Melhor Amigo(a)") }
     var colorHex by remember { mutableStateOf("#FF4B72") }
     var bio by remember { mutableStateOf("") }
+    var avatarUri by remember { mutableStateOf("") }
 
     val colors = listOf("#FF4B72", "#8E3BEE", "#00F5D4", "#FFB703", "#3A86FF")
+
+    val personPhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { avatarUri = uri.toString() }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Adicionar Pessoa", fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Avatar Preview
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(
+                            runCatching { Color(android.graphics.Color.parseColor(colorHex)) }
+                                .getOrDefault(MaterialTheme.colorScheme.primary)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (avatarUri.isNotBlank()) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = "Foto da pessoa",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (name.isNotBlank()) {
+                        Text(
+                            text = name.take(1).uppercase(),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                    } else {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                    }
+                }
+
+                Button(
+                    onClick = { personPhotoPickerLauncher.launch("image/*") },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Escolher Foto da Galeria", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Nome (ex: Helô)") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
                     value = nickname,
                     onValueChange = { nickname = it },
                     label = { Text("Apelido opcional") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
                     value = rel,
                     onValueChange = { rel = it },
                     label = { Text("Relação (ex: Irmão, Turma da escola)") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
@@ -380,12 +490,12 @@ fun AddPersonDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Cor do perfil:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Cor da tag:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.Start))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.Start)) {
                     colors.forEach { c ->
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(28.dp)
                                 .clip(CircleShape)
                                 .background(Color(android.graphics.Color.parseColor(c)))
                                 .clickable { colorHex = c }
@@ -396,7 +506,7 @@ fun AddPersonDialog(
         },
         confirmButton = {
             Button(
-                onClick = { if (name.isNotBlank()) onAdd(name, nickname, rel, colorHex, bio) },
+                onClick = { if (name.isNotBlank()) onAdd(name, nickname, rel, colorHex, bio, avatarUri) },
                 enabled = name.isNotBlank()
             ) {
                 Text("Adicionar")
