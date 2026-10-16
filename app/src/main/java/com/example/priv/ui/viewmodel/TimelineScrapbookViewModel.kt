@@ -90,6 +90,18 @@ class TimelineScrapbookViewModel(application: Application) : AndroidViewModel(ap
         }
     }
 
+    fun updateScrapbook(scrapbook: ScrapbookEntity) {
+        viewModelScope.launch {
+            scrapbookRepo.updateScrapbook(scrapbook)
+        }
+    }
+
+    fun saveScrapbookItems(scrapbookId: String, items: List<com.example.priv.data.model.ScrapbookPageItem>) {
+        viewModelScope.launch {
+            scrapbookRepo.updateScrapbookItems(scrapbookId, items)
+        }
+    }
+
     fun deleteScrapbook(scrapbookId: String) {
         viewModelScope.launch {
             scrapbookRepo.deleteScrapbook(scrapbookId)

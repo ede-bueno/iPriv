@@ -41,11 +41,13 @@ class MainActivity : ComponentActivity() {
     private val timelineScrapbookViewModel: TimelineScrapbookViewModel by viewModels()
     private val quickCaptureViewModel: QuickCaptureViewModel by viewModels()
     private val profileViewModel: com.example.priv.data.viewmodel.ProfileViewModel by viewModels()
+    private val aiAssistantViewModel: com.example.priv.ui.viewmodel.AiAssistantViewModel by viewModels()
 
     private val sharedAttachments = mutableStateListOf<com.example.priv.data.model.AttachmentInput>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.example.priv.data.firebase.configureAppCheck(this, intent)
         enableEdgeToEdge()
 
         com.example.priv.data.security.SecurityLockManager.init(this)
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
         var showQuickCaptureSheet by remember { mutableStateOf(false) }
         var showPreferencesMenu by remember { mutableStateOf(false) }
         var showAudioVaultSheet by remember { mutableStateOf(false) }
+        var showAiAssistantSheet by remember { mutableStateOf(false) }
 
         val userPrefsManager = remember { com.example.priv.data.preferences.UserPreferencesManager.getInstance(this@MainActivity) }
         val userPrefs by userPrefsManager.preferences.collectAsState()
@@ -236,7 +239,8 @@ class MainActivity : ComponentActivity() {
                         onNavigateToTimeline = { currentScreen = PrivScreen.TIMELINE_SCRAPBOOK },
                         onOpenQuickCapture = { showQuickCaptureSheet = true },
                         onOpenPreferences = { showPreferencesMenu = true },
-                        onOpenAudioVault = { showAudioVaultSheet = true }
+                        onOpenAudioVault = { showAudioVaultSheet = true },
+                        onOpenAiAssistant = { showAiAssistantSheet = true }
                     )
 
                     PrivScreen.PERSONS_GROUPS -> PersonsAndGroupsScreen(
@@ -352,6 +356,19 @@ class MainActivity : ComponentActivity() {
             if (showAudioVaultSheet) {
                 com.example.priv.ui.audio.AudioMemoriesModalSheet(
                     onDismissRequest = { showAudioVaultSheet = false }
+                )
+            }
+
+            if (showAiAssistantSheet) {
+                val memoriesSummary = remember(moments, collections, persons) {
+                    moments.take(10).joinToString("\n") { m ->
+                        "- ${m.title}: ${m.description}"
+                    }
+                }
+                com.example.priv.ui.components.AiMemoryAssistantSheet(
+                    viewModel = aiAssistantViewModel,
+                    availableMemoriesSummary = memoriesSummary,
+                    onDismissRequest = { showAiAssistantSheet = false }
                 )
             }
         }

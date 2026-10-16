@@ -10,6 +10,9 @@ interface ScrapbookDao {
     @Query("SELECT * FROM scrapbooks ORDER BY updatedAt DESC")
     fun getAllScrapbooks(): Flow<List<ScrapbookEntity>>
 
+    @Query("SELECT * FROM scrapbooks")
+    suspend fun getAllScrapbooksDirect(): List<ScrapbookEntity>
+
     @Query("SELECT * FROM scrapbooks WHERE id = :id LIMIT 1")
     suspend fun getScrapbookById(id: String): ScrapbookEntity?
 

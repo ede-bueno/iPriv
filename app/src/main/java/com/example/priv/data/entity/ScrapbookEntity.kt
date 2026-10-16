@@ -15,5 +15,6 @@ data class ScrapbookEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val associatedPersonId: String? = null,
     val stickersJson: String = "[]", // Stickers decorativos: 💖, 🎸, ⚡, 🎧, 🍀, etc.
-    val backgroundPattern: String = "PAPER_GRID" // GRADIENT, PAPER_GRID, DARK_NEBULA, PASTEL_CREAM
+    val backgroundPattern: String = "PAPER_GRID", // GRADIENT, PAPER_GRID, DARK_NEBULA, PASTEL_CREAM, SOFT_LAVENDER
+    val itemsJson: String = "[]" // Itens persistidos do mural (fotos, notas, lembretes, adesivos)
 )

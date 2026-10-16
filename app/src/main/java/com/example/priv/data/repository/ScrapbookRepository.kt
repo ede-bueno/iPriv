@@ -39,6 +39,12 @@ class ScrapbookRepository(private val scrapbookDao: ScrapbookDao) {
         scrapbookDao.updateScrapbook(scrapbook.copy(updatedAt = System.currentTimeMillis()))
     }
 
+    suspend fun updateScrapbookItems(id: String, items: List<com.example.priv.data.model.ScrapbookPageItem>) {
+        val current = scrapbookDao.getScrapbookById(id) ?: return
+        val serialized = com.example.priv.data.model.ScrapbookPageItem.serializeList(items)
+        scrapbookDao.updateScrapbook(current.copy(itemsJson = serialized, updatedAt = System.currentTimeMillis()))
+    }
+
     suspend fun deleteScrapbook(id: String) {
         scrapbookDao.deleteScrapbook(id)
     }

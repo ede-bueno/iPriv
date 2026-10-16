@@ -3,6 +3,8 @@ package com.example.priv.data.seed
 import com.example.priv.data.dao.*
 import com.example.priv.data.database.PrivDatabase
 import com.example.priv.data.entity.*
+import com.example.priv.data.model.ScrapbookItemType
+import com.example.priv.data.model.ScrapbookPageItem
 import com.example.priv.data.model.SpaceType
 import com.example.priv.data.model.SyncStatus
 import java.util.UUID
@@ -24,8 +26,11 @@ object SeedData {
                 scrapbookDao = db.scrapbookDao(),
                 audioMemoryDao = db.audioMemoryDao()
             )
-        } else if (db.audioMemoryDao().getAllAudioMemoriesDirect().isEmpty()) {
-            seedAudioMemories(db.audioMemoryDao())
+        } else {
+            if (db.audioMemoryDao().getAllAudioMemoriesDirect().isEmpty()) {
+                seedAudioMemories(db.audioMemoryDao())
+            }
+            ensureScrapbooksPopulated(db.scrapbookDao())
         }
     }
 
@@ -462,37 +467,135 @@ object SeedData {
             )
         )
 
-        // 9. Scrapbooks Canva Interativos (Colagens com zoom e pan)
-        val scrap1Id = "seed_scrapbook_1"
-        scrapbookDao.insertScrapbook(
-            ScrapbookEntity(
-                id = scrap1Id,
-                title = "Verão Inesquecível & Praia 🌊",
-                description = "Colagem com fotos da galera em Ubatuba, pôr do sol e risadas na areia.",
-                styleTheme = "retro_vibrant",
-                coverEmojiOrIcon = "🌊",
-                stickersJson = "[\"🏖️\",\"☀️\",\"📸\",\"✨\",\"🏄\"]",
-                createdAt = now - (86400000L * 14),
-                updatedAt = now - (86400000L * 1)
-            )
-        )
-
-        val scrap2Id = "seed_scrapbook_2"
-        scrapbookDao.insertScrapbook(
-            ScrapbookEntity(
-                id = scrap2Id,
-                title = "Diário Visual dos Melhores Amigos 💜",
-                description = "Colagem estilo mural com fotos, memes e momentos que marcaram o ano.",
-                styleTheme = "neon_cyber",
-                coverEmojiOrIcon = "⚡",
-                stickersJson = "[\"💜\",\"⚡\",\"🔥\",\"🎧\",\"🍕\"]",
-                createdAt = now - (86400000L * 20),
-                updatedAt = now
-            )
-        )
+        // 9. Álbuns de Histórias & Murais Afetivos Interativos
+        ensureScrapbooksPopulated(scrapbookDao)
 
         // 10. Memórias de Áudio com Metadados e Transcrições associadas (Room)
         seedAudioMemories(audioMemoryDao)
+    }
+
+    suspend fun ensureScrapbooksPopulated(scrapbookDao: ScrapbookDao) {
+        val now = System.currentTimeMillis()
+        val bestFriendsItems = listOf(
+            ScrapbookPageItem(
+                id = "bf_slot_1",
+                type = ScrapbookItemType.ACTION_SLOT,
+                title = "Foto com Meu Melhor Amigo(a) 📸",
+                actionPrompt = "Toque aqui para escolher a melhor foto de vocês juntos!",
+                rotationDeg = -2.5f
+            ),
+            ScrapbookPageItem(
+                id = "bf_note_1",
+                type = ScrapbookItemType.NOTE,
+                title = "Regra de Ouro da Amizade 💜",
+                uriOrContent = "Parceria em todos os momentos: rir junto até a barriga doer, desabafar nas horas difíceis e nunca deixar uma mensagem sem resposta!",
+                noteColorHex = "#FFE5EC",
+                authorOrPerson = "Diário Afetivo",
+                rotationDeg = 1.8f
+            ),
+            ScrapbookPageItem(
+                id = "bf_slot_2",
+                type = ScrapbookItemType.ACTION_SLOT,
+                title = "O Momento Mais Engraçado 😂",
+                actionPrompt = "Toque para colar aquela foto ou meme que sempre faz a gente gargalhar!",
+                rotationDeg = 2.0f
+            ),
+            ScrapbookPageItem(
+                id = "bf_note_2",
+                type = ScrapbookItemType.NOTE,
+                title = "Trilha Sonora da Amizade 🎵",
+                uriOrContent = "Aquela música que quando toca no carro ou na playlist, todo mundo canta junto a plenos pulmões!",
+                noteColorHex = "#FFF9DB",
+                authorOrPerson = "Nossa Canção",
+                rotationDeg = -1.5f
+            ),
+            ScrapbookPageItem(
+                id = "bf_slot_3",
+                type = ScrapbookItemType.ACTION_SLOT,
+                title = "Nossa Próxima Aventura ✈️",
+                actionPrompt = "Toque para registrar a viagem, show ou rolê que vamos realizar juntos em breve!",
+                rotationDeg = 1.2f
+            )
+        )
+
+        val summerItems = listOf(
+            ScrapbookPageItem(
+                id = "summer_slot_1",
+                type = ScrapbookItemType.ACTION_SLOT,
+                title = "Pôr do Sol Perfeito 🌅",
+                actionPrompt = "Toque para adicionar uma foto do fim de tarde na praia!",
+                rotationDeg = -1.8f
+            ),
+            ScrapbookPageItem(
+                id = "summer_note_1",
+                type = ScrapbookItemType.NOTE,
+                title = "Lembrança de Verão ☀️",
+                uriOrContent = "Água de coco gelada, pés descalços na areia, cheiro de protetor solar e conversas que duravam até tarde.",
+                noteColorHex = "#E3FAFC",
+                authorOrPerson = "Lembrança de Viagem",
+                rotationDeg = 2.2f
+            ),
+            ScrapbookPageItem(
+                id = "summer_slot_2",
+                type = ScrapbookItemType.ACTION_SLOT,
+                title = "A Galera Toda Reunida 🏖️",
+                actionPrompt = "Toque para adicionar a foto de todo mundo se divertindo na areia!",
+                rotationDeg = 1.5f
+            )
+        )
+
+        val scrap1 = scrapbookDao.getScrapbookById("seed_scrapbook_1")
+        if (scrap1 == null) {
+            scrapbookDao.insertScrapbook(
+                ScrapbookEntity(
+                    id = "seed_scrapbook_1",
+                    title = "Verão Inesquecível & Praia 🌊",
+                    description = "Mural com fotos da viagem, brisa do mar e risadas na areia.",
+                    styleTheme = "VINTAGE_POLAROID",
+                    coverEmojiOrIcon = "🌊",
+                    stickersJson = "[\"🏖️\",\"☀️\",\"📸\",\"✨\",\"🏄\"]",
+                    backgroundPattern = "PASTEL_CREAM",
+                    itemsJson = ScrapbookPageItem.serializeList(summerItems),
+                    createdAt = now - (86400000L * 14),
+                    updatedAt = now - (86400000L * 1)
+                )
+            )
+        } else if (scrap1.itemsJson.isBlank() || scrap1.itemsJson == "[]") {
+            scrapbookDao.updateScrapbook(
+                scrap1.copy(
+                    itemsJson = ScrapbookPageItem.serializeList(summerItems),
+                    styleTheme = "VINTAGE_POLAROID",
+                    backgroundPattern = "PASTEL_CREAM"
+                )
+            )
+        }
+
+        val scrap2 = scrapbookDao.getScrapbookById("seed_scrapbook_2")
+        if (scrap2 == null) {
+            scrapbookDao.insertScrapbook(
+                ScrapbookEntity(
+                    id = "seed_scrapbook_2",
+                    title = "Diário Visual dos Melhores Amigos 💜",
+                    description = "Mural afetivo com fotos, momentos engraçados e memórias da amizade.",
+                    styleTheme = "SOFT_LAVENDER",
+                    coverEmojiOrIcon = "👯",
+                    stickersJson = "[\"💜\",\"👯\",\"✨\",\"🍕\",\"🎵\"]",
+                    backgroundPattern = "SOFT_LAVENDER",
+                    itemsJson = ScrapbookPageItem.serializeList(bestFriendsItems),
+                    createdAt = now - (86400000L * 20),
+                    updatedAt = now
+                )
+            )
+        } else if (scrap2.itemsJson.isBlank() || scrap2.itemsJson == "[]") {
+            scrapbookDao.updateScrapbook(
+                scrap2.copy(
+                    itemsJson = ScrapbookPageItem.serializeList(bestFriendsItems),
+                    styleTheme = "SOFT_LAVENDER",
+                    coverEmojiOrIcon = "👯",
+                    backgroundPattern = "SOFT_LAVENDER"
+                )
+            )
+        }
     }
 
     suspend fun seedAudioMemories(audioMemoryDao: AudioMemoryDao) {

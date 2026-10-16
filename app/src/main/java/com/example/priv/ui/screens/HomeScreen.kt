@@ -42,6 +42,7 @@ fun HomeScreen(
     onOpenQuickCapture: () -> Unit,
     onOpenPreferences: (() -> Unit)? = null,
     onOpenAudioVault: (() -> Unit)? = null,
+    onOpenAiAssistant: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val activeMemories by viewModel.activeMemories.collectAsState()
@@ -133,6 +134,36 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .clickable { onOpenAiAssistant?.invoke() }
+                                .testTag("btn_open_ai_assistant")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = "Guardião IA Gemini",
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Guardião IA ✨",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
+                    }
+
                     item {
                         Surface(
                             shape = RoundedCornerShape(20.dp),

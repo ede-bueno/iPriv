@@ -251,7 +251,10 @@ fun QuickCaptureSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(42.dp)
@@ -274,25 +277,30 @@ fun QuickCaptureSheet(
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (flowMode == CaptureFlowMode.NEW_MEMORY) "Guardar Nova Memória" else "Vincular a Memória Existente",
-                            fontSize = 18.sp,
+                            text = if (flowMode == CaptureFlowMode.NEW_MEMORY) "Guardar Nova Memória" else "Vincular a Memória",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                         Text(
                             text = "Preservação inteligente GuardDay",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1
                         )
                     }
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
                         onClick = { performSave() },
@@ -301,8 +309,10 @@ fun QuickCaptureSheet(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier.testTag("top_save_quick_memory_btn")
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 90.dp)
+                            .testTag("top_save_quick_memory_btn")
                     ) {
                         if (isSaving) {
                             CircularProgressIndicator(
@@ -317,7 +327,8 @@ fun QuickCaptureSheet(
                         Text(
                             text = if (flowMode == CaptureFlowMode.NEW_MEMORY) "Guardar" else "Vincular",
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
                         )
                     }
 
